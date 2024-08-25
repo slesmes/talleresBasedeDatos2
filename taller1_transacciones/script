@@ -1,0 +1,71 @@
+create table cliente (
+	id varchar not null primary key,
+	nombre varchar(50) not null,
+	edad integer not null,
+	correo varchar(30)
+);
+
+create table productos(
+	codigo varchar primary key,
+	nombre varchar not null,
+	stock integer not null,
+	valor_unitario float not null
+);
+
+create table pedidos (
+	id varchar primary key,
+	fecha date,
+	cantidad integer,  
+	valor_total integer,
+	producto_id varchar, 
+	cliente_id  varchar,
+	
+	foreign key (producto_id) references productos(codigo),
+	foreign key (cliente_id) references cliente(id)
+)
+
+begin;
+
+
+insert into cliente (id, nombre, edad, correo) values
+('1', 'juan perez', 30, 'juan.perez@example.com'),
+('2', 'maría garcia', 25, 'maria.garcia@example.com'),
+('3', 'carlos sanchez', 40, 'carlos.sanchez@example.com');
+
+
+insert into productos (codigo, nombre, stock, valor_unitario) values
+('1', 'pc', 50, 799.99),
+('2', 'celular', 150, 399.99),
+('3', 'tablet', 100, 299.99);
+
+
+insert into pedidos (id, fecha, cantidad, valor_total, producto_id, cliente_id) values
+('1', '2024-08-01', 2, 1599.98, '1', '1'),
+('2', '2024-08-02', 1, 399.99, '2', '2'),
+('3', '2024-08-03', 3, 899.97, '3', '3');
+
+update cliente set edad = 31 where id = '1';
+
+update cliente set correo = 'maria.garcia@update.com' where id = '2';
+
+update productos set stock = 45 where codigo = '1';
+
+update productos set valor_unitario = 429.99 where codigo = '2';
+
+update pedidos set cantidad = 4 where id = '1';
+
+update pedidos set fecha = '2024-08-05' where id = '3';
+
+delete from pedidos where id = '3';
+
+delete from cliente where id = '3';
+
+delete from productos where codigo = '3';
+
+commit;
+
+select * from cliente;
+
+select * from productos;
+
+select * from pedidos;
