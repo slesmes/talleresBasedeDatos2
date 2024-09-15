@@ -1,0 +1,128 @@
+create table usuarios(
+	id varchar primary key,
+	nombre varchar not null,
+	edad integer not null,
+	email varchar
+);
+
+create table factura(
+	id varchar primary key,
+	fecha date not null,
+	producto varchar not null,
+	cantidad integer not null,
+	valor_unitario numeric not null,
+	valor_total numeric not null,
+	usuario_id varchar not null,
+	
+	foreign key (usuario_id) references usuarios(id)
+)
+
+CREATE SEQUENCE secuencia_id
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+   
+CREATE SEQUENCE secuencia_id_factura
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+    
+create or replace procedure poblar_usuarios()
+language plpgsql
+as $$
+declare 
+    v_id varchar;
+    v_nombre varchar;
+    v_email varchar;
+    v_edad integer;
+begin
+    for i in 1..50 loop
+        v_id := nextval('secuencia_id');
+        v_nombre := (array['Juan', 'María', 'Pedro', 'Ana', 'Luis', 'Sofía', 'Carlos', 'Laura', 'Jorge', 'Marta'])[floor(random() * 10 + 1)];
+        v_email := v_nombre || '@example.com';
+        v_edad := floor(random() * 40 + 20);
+        
+        insert into usuarios (id, nombre, email, edad) values (v_id, v_nombre, v_email, v_edad);
+    end loop;
+end;
+$$;
+
+create or replace procedure poblar_facturas()
+language plpgsql
+as $$
+declare 
+ 	v_id varchar;
+	v_fecha date;
+	v_producto varchar;
+	v_cantidad integer;
+	v_valor_unitario numeric;
+	v_valor_total numeric;
+	v_usuario_id varchar;
+begin
+    for i in 1..25 loop
+        v_id := nextval('secuencia_id_factura');
+		v_fecha := current_date - (floor(random() * 365))::int;
+        v_producto := (array['tablet', 'pc', 'xbox', 'play', 'tv', 'proyector', 'audifonos'])[floor(random() * 7 + 1)];
+        v_cantidad := FLOOR(RANDOM() * 10) + 1;
+        v_valor_unitario := floor(random() * 40 + 20);
+		v_valor_total := v_valor_unitario * v_cantidad;
+		v_usuario_id := floor(random()*50+1)::text;
+        
+        insert into factura (id, fecha, producto, cantidad, valor_unitario, valor_total, usuario_id) 
+        values (v_id, v_fecha, v_producto, v_cantidad, v_valor_unitario, v_valor_total, v_usuario_id);
+    end loop;
+end;
+$$;
+
+
+create or replace procedure prueba_producto_vacio(p_fecha date, p_producto varchar, p_cantidad integer, p_valor_unitario numeric, p_usuario_id varchar)
+language plpgsql
+as $$
+declare
+	v_valor_total numeric;
+	v_id varchar;
+begin
+	v_valor_total := p_cantidad * p_valor_unitario;
+	v_id := nextval('secuencia_id_factura');
+    insert into factura (id, fecha, producto, cantidad, valor_unitario, valor_total, usuario_id) 
+    values (v_id, p_fecha, p_producto, p_cantidad, p_valor_unitario, v_valor_total, p_usuario_id);
+	insert into factura (id, fecha, producto, cantidad, valor_unitario, valor_total, usuario_id) 
+    values (v_id, p_fecha, null, p_cantidad, p_valor_unitario, v_valor_total, p_usuario_id);
+exception
+	when others then
+		rollback;
+	raise notice 'error al realizar la insercion de la factura: %', SQLERRM;
+end;
+$$;
+
+create or replace procedure prueba_identificacion_unica(p_id varchar, p_nombre varchar, p_edad integer)
+language plpgsql
+as $$
+declare
+	v_id varchar;
+	v_email varchar;
+begin
+	v_id := nextval('secuencia_id');
+	v_email := p_nombre || '@example.com';
+    insert into usuarios (id, nombre, email, edad) values (p_id, p_nombre, v_email, p_edad);
+exception
+	when others then
+		rollback;
+	raise notice 'error al realizar la insercion del usuario: %', SQLERRM;
+	insert into usuarios (id, nombre, email, edad) values (v_id, p_nombre, v_email, p_edad);
+end;
+$$;
+
+
+
+
+call poblar_usuarios();
+call poblar_facturas();
+call prueba_producto_vacio('2024-06-04', 'tablet', 1, 60, '1');
+call prueba_identificacion_unica('1','Luis', 25);
+select * from usuarios;
+select * from factura;
